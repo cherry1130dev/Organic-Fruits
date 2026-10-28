@@ -1,0 +1,47 @@
+{
+  "sensor_model": {
+    "accuracy": 0.9792,
+    "precision": 0.9799,
+    "recall": 0.9792,
+    "f1_score": 0.9793,
+    "features": [
+      "v_mq2",
+      "v_mq135",
+      "rs_mq2",
+      "rs_mq135",
+      "ratio_mq2",
+      "ratio_mq135",
+      "ppm_mq2",
+      "ppm_mq135"
+    ],
+    "classes": [
+      "MODERATE",
+      "SAFE",
+      "UNSAFE"
+    ]
+  },
+  "image_model": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "features": [
+      "powder_ratio",
+      "copper_ratio",
+      "sulfur_ratio",
+      "total_residue_ratio",
+      "spot_ratio",
+      "edge_mean"
+    ],
+    "classes": [
+      "MODERATE",
+      "SAFE",
+      "UNSAFE"
+    ]
+  },
+  "multimodal_fusion": {
+    "weight_sensor": 0.65,
+    "weight_image": 0.35,
+    "expected_fused_accuracy": 1.015
+  }
+}

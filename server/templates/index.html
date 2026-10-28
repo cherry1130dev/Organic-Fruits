@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Pesticide Detection | Organic Produce Screener</title>
+  <meta name="description" content="IoT-Based Portable Screening of Pesticide Residue on Organic Fruits and Vegetables using ESP32-CAM, MQ Gas Sensors, and Multimodal ML.">
+  <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- Chart.js for Historical Trends -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-icon-box">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14.93c-2.32-.42-4-2.43-4-4.93 0-2.76 2.24-5 5-5 .34 0 .68.03 1 .1v2.07c-.31-.11-.64-.17-1-.17-1.66 0-3 1.34-3 3 0 1.3.84 2.4 2 2.82v2.11z"/></svg>
+      </div>
+      <div class="brand-titles">
+        <h1>AgriShield IoT</h1>
+        <p>Organic Produce Residue Screener</p>
+      </div>
+    </div>
+
+    <!-- Navigation Menu Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab-btn active" data-tab="monitor">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Live Monitor</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="history">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        <span>History</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <span>Settings</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="about">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <span>About</span>
+      </button>
+    </nav>
+
+    <!-- Operational State Pill -->
+    <div class="header-status">
+      <span class="pulse-dot"></span>
+      <span id="backend-status-text">ESP32 Ingestion Online</span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- ===================================================================
+         VIEW 1: LIVE MONITOR
+         =================================================================== -->
+    <section id="view-monitor" class="tab-view active">
+      <div class="monitor-grid">
+        
+        <!-- Left Column: Verdict Hero & Scan Trigger -->
+        <div class="left-col">
+          
+          <!-- Hero Verdict Card -->
+          <div id="verdict-card" class="glass-panel verdict-hero-card status-safe">
+            <div class="verdict-header-row">
+              <span class="produce-tag">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-5.39C20.26 15.07 21 13.12 21 11c0-4.97-4.03-9-9-9z"/></svg>
+                <span id="disp-produce">Apple</span>
+              </span>
+              <span id="disp-time" class="scan-time">--:--:--</span>
+            </div>
+
+            <!-- Risk Score Dial -->
+            <div class="verdict-dial-wrap">
+              <svg class="verdict-svg" viewBox="0 0 160 160">
+                <circle class="dial-bg-track" cx="80" cy="80" r="70"></circle>
+                <circle id="verdict-dial-bar" class="dial-progress-bar" cx="80" cy="80" r="70"></circle>
+              </svg>
+              <div class="dial-inner-content">
+                <div class="dial-score-num"><span id="verdict-score-num">0</span><span class="dial-score-unit">%</span></div>
+                <div class="dial-score-label">Pesticide Risk</div>
+              </div>
+            </div>
+
+            <!-- Verdict Text Badge -->
+            <div id="disp-badge" class="verdict-badge badge-safe">SAFE</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.35rem; text-align: center;">
+              Model Confidence: <span id="disp-conf" style="font-weight: 600; color: var(--text-main);">100%</span>
+            </div>
+
+            <!-- Action Recommendation Box -->
+            <div id="disp-action" class="verdict-action-box">
+              Awaiting first reading from ESP32-CAM or test client...
+            </div>
+
+            <!-- Probabilities Breakdown -->
+            <div class="prob-breakdown">
+              <div class="prob-item">
+                <div class="prob-label-row">
+                  <span>Safe / Organic</span>
+                  <span id="prob-safe-val">100%</span>
+                </div>
+                <div class="prob-track">
+                  <div id="prob-safe-bar" class="prob-fill fill-safe" style="width: 100%;"></div>
+                </div>
+              </div>
+              <div class="prob-item">
+                <div class="prob-label-row">
+                  <span>Moderate / Wash Recommended</span>
+                  <span id="prob-mod-val">0%</span>
+                </div>
+                <div class="prob-track">
+                  <div id="prob-mod-bar" class="prob-fill fill-mod" style="width: 0%;"></div>
+                </div>
+              </div>
+              <div class="prob-item">
+                <div class="prob-label-row">
+                  <span>Unsafe / Heavy Residue</span>
+                  <span id="prob-unsafe-val">0%</span>
+                </div>
+                <div class="prob-track">
+                  <div id="prob-unsafe-bar" class="prob-fill fill-unsafe" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+            <!-- Produce Selector & Simulator Card -->
+          <div class="glass-panel trigger-card">
+            <h3 class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+              Inspection Controller
+            </h3>
+            
+            <div class="form-group">
+              <label class="form-label" for="sel-produce">Select Target Produce Profile</label>
+              <select id="sel-produce" class="custom-select">
+                <option value="apple" selected>Apple (High wax / natural esters)</option>
+                <option value="tomato">Tomato (Smooth peel / high water)</option>
+                <option value="spinach">Spinach (Leafy green / high surface area)</option>
+                <option value="grapes">Grapes (Thin skin / sulfur prone)</option>
+                <option value="strawberry">Strawberry (Porous achenes)</option>
+                <option value="bell_pepper">Bell Pepper (Waxy cuticle)</option>
+                <option value="cucumber">Cucumber (Uniform skin)</option>
+                <option value="orange">Orange (Citrus limonene natural VOC)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="sel-sample-type">Simulate Headspace / Condition</label>
+              <select id="sel-sample-type" class="custom-select">
+                <option value="SAFE">Clean / Organic Produce (Safe)</option>
+                <option value="MODERATE">Moderate Residue (Wash Recommended)</option>
+                <option value="UNSAFE">Heavy Chemical Residue (Unsafe)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="manual-image-input">Or Upload Custom Photo (Optional)</label>
+              <input type="file" id="manual-image-input" class="custom-input" accept="image/*">
+            </div>
+
+            <!-- Webcam Snapshot and Manual Scan Action Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 1.25rem;">
+              <button id="btn-webcam-snap" class="btn-primary" style="background: linear-gradient(135deg, #06b6d4, #0284c7); box-shadow: 0 4px 15px rgba(6, 182, 212, 0.35);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                📸 Snap Laptop Webcam & Analyze
+              </button>
+              
+              <button id="btn-run-scan" class="btn-secondary" style="width: 100%;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                Analyze via Upload / Simulation
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Dual Gas Sensors & Vision Inspection -->
+        <div class="right-col">
+          
+          <!-- Gas Sensor Cards -->
+          <div class="sensor-cards-grid">
+            
+            <!-- MQ-2 Sensor Card -->
+            <div class="glass-panel gauge-card">
+              <div class="gauge-header">
+                <div>
+                  <h4 class="gauge-name">MQ-2 Gas Sensor</h4>
+                  <span class="gauge-target">Solvent & Emulsifier Vapors</span>
+                </div>
+                <span class="produce-tag" style="font-size: 0.7rem;">CH-A0</span>
+              </div>
+
+              <div class="sensor-gauge-wrap">
+                <svg class="semi-gauge-svg" viewBox="0 0 140 140">
+                  <circle class="semi-bg-track" cx="70" cy="70" r="50"></circle>
+                  <circle id="mq2-bar" class="semi-fill-bar" cx="70" cy="70" r="50"></circle>
+                </svg>
+                <div class="gauge-center-val">
+                  <span id="mq2-val" class="gauge-ppm-num">0</span>
+                  <span class="gauge-ppm-unit">PPM</span>
+                </div>
+              </div>
+
+              <div class="gauge-metrics-list">
+                <div class="metric-item-col">
+                  <span class="metric-col-lbl">ADC Voltage</span>
+                  <span id="mq2-volt" class="metric-col-val">0.00V</span>
+                </div>
+                <div class="metric-item-col">
+                  <span class="metric-col-lbl">Rs / R0 Ratio</span>
+                  <span id="mq2-ratio" class="metric-col-val">0.00</span>
+                </div>
+                <div class="metric-item-col">
+                  <span class="metric-col-lbl">Threshold</span>
+                  <span class="metric-col-val" style="color: var(--accent-mod);">150 PPM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- MQ-135 Sensor Card -->
+            <div class="glass-panel gauge-card">
+              <div class="gauge-header">
+                <div>
+                  <h4 class="gauge-name">MQ-135 Air Quality</h4>
+                  <span class="gauge-target">Agrochemical VOCs & Amines</span>
+                </div>
+                <span class="produce-tag" style="font-size: 0.7rem;">CH-A1</span>
+              </div>
+
+              <div class="sensor-gauge-wrap">
+                <svg class="semi-gauge-svg" viewBox="0 0 140 140">
+                  <circle class="semi-bg-track" cx="70" cy="70" r="50"></circle>
+                  <circle id="mq135-bar" class="semi-fill-bar" cx="70" cy="70" r="50"></circle>
+                </svg>
+                <div class="gauge-center-val">
+                  <span id="mq135-val" class="gauge-ppm-num">0</span>
+                  <span class="gauge-ppm-unit">PPM</span>
+                </div>
+              </div>
+
+              <div class="gauge-metrics-list">
+                <div class="metric-item-col">
+                  <span class="metric-col-lbl">ADC Voltage</span>
+                  <span id="mq135-volt" class="metric-col-val">0.00V</span>
+                </div>
+                <div class="metric-item-col">
+                  <span class="metric-col-lbl">Rs / R0 Ratio</span>
+                  <span id="mq135-ratio" class="metric-col-val">0.00</span>
+                </div>
+                <div class="metric-item-col">
+                  <span class="metric-col-lbl">Threshold</span>
+                  <span class="metric-col-val" style="color: var(--accent-mod);">85 PPM</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Image Inspection & Residue Heatmap Viewer -->
+          <div class="glass-panel inspection-card">
+            <div class="inspection-header">
+              <h3 class="card-title" style="margin-bottom: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Computer Vision Inspection
+              </h3>
+              
+              <!-- Toggle buttons -->
+              <div class="image-view-toggle">
+                <button id="btn-view-webcam" class="toggle-btn">💻 Laptop Camera</button>
+                <button id="btn-view-raw" class="toggle-btn active">Inspected Photo</button>
+                <button id="btn-view-heatmap" class="toggle-btn">AI Residue Heatmap</button>
+              </div>
+            </div>
+
+            <!-- Image Frame -->
+            <div class="image-display-frame" id="camera-frame-container">
+              <!-- Live Webcam Video Stream -->
+              <video id="webcam-feed" autoplay playsinline style="display: none; width: 100%; height: 100%; object-fit: cover;"></video>
+              
+              <!-- Captured Produce Image -->
+              <img id="preview-img" src="/static/icons/icon-512.png" alt="Produce Preview" class="preview-img">
+              
+              <!-- Hidden Canvas for Snapshot Capture -->
+              <canvas id="webcam-canvas" style="display: none;"></canvas>
+
+              <!-- Live Webcam Target Reticle -->
+              <div id="webcam-reticle" style="display: none; position: absolute; width: 180px; height: 180px; border: 2px dashed rgba(6, 182, 212, 0.85); border-radius: 12px; pointer-events: none; box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);">
+                <span style="position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 0.68rem; font-weight: 600; color: #06b6d4; background: rgba(15,23,42,0.85); padding: 2px 8px; border-radius: 4px; white-space: nowrap;">ALIGN PRODUCE HERE</span>
+              </div>
+              
+              <!-- Heatmap Legend Overlay -->
+              <div id="heatmap-legend" class="heatmap-legend">
+                <div class="legend-chip"><span class="legend-dot dot-powder"></span> Powder/Mancozeb</div>
+                <div class="legend-chip"><span class="legend-dot dot-copper"></span> Copper Fungicide</div>
+                <div class="legend-chip"><span class="legend-dot dot-sulfur"></span> Sulfur Dust</div>
+              </div>
+            </div>
+
+            <!-- Vision Metrics Grid -->
+            <div class="visual-metrics-grid">
+              <div class="v-metric-box">
+                <div class="v-lbl">Total Residue Ratio</div>
+                <div id="disp-residue-ratio" class="v-val">0.0%</div>
+              </div>
+              <div class="v-metric-box">
+                <div class="v-lbl">Chalky Powder Marks</div>
+                <div id="disp-powder-ratio" class="v-val">0.0%</div>
+              </div>
+              <div class="v-metric-box">
+                <div class="v-lbl">Surface Cleanliness</div>
+                <div id="disp-cleanliness" class="v-val" style="color: var(--accent-safe);">100%</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ===================================================================
+         VIEW 2: HISTORY & ANALYTICS
+         =================================================================== -->
+    <section id="view-history" class="tab-view">
+      
+      <!-- Toolbar Filter -->
+      <div class="history-toolbar">
+        <div class="filter-group">
+          <select id="filter-produce" class="custom-select" style="width: auto;">
+            <option value="all">All Produce Types</option>
+            <option value="apple">Apple</option>
+            <option value="tomato">Tomato</option>
+            <option value="spinach">Spinach</option>
+            <option value="grapes">Grapes</option>
+            <option value="strawberry">Strawberry</option>
+            <option value="bell_pepper">Bell Pepper</option>
+            <option value="cucumber">Cucumber</option>
+            <option value="orange">Orange</option>
+          </select>
+
+          <select id="filter-status" class="custom-select" style="width: auto;">
+            <option value="ALL">All Verdicts</option>
+            <option value="SAFE">Safe Only</option>
+            <option value="MODERATE">Moderate Only</option>
+            <option value="UNSAFE">Unsafe Only</option>
+          </select>
+        </div>
+
+        <button id="btn-export-csv" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Export CSV Log
+        </button>
+      </div>
+
+      <!-- Historical Chart Card -->
+      <div class="glass-panel chart-container-card">
+        <h4 class="card-title" style="margin-bottom: 0.5rem;">Pesticide Risk & Gas Concentration Trend</h4>
+        <div style="position: relative; height: 260px; width: 100%;">
+          <canvas id="history-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- History Table Card -->
+      <div class="glass-panel history-table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Produce</th>
+              <th>Verdict</th>
+              <th>Risk Score</th>
+              <th>MQ-2 / MQ-135</th>
+              <th>Residue %</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================================
+         VIEW 3: SETTINGS & CALIBRATION
+         =================================================================== -->
+    <section id="view-settings" class="tab-view">
+      <div class="settings-grid">
+        
+        <!-- Thresholds & Fusion Weights -->
+        <div class="glass-panel settings-card">
+          <h3 class="card-title">Thresholds & Multimodal Weights</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Safe Maximum Risk Cutoff: <span id="val-safe-risk" class="range-val-badge">35%</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-safe-risk" min="15" max="50" step="1" value="35" class="custom-range">
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">Samples with risk score below this limit are marked SAFE (Green).</p>
+          </div>
+
+          <div class="form-group" style="margin-top: 1.25rem;">
+            <label class="form-label">Moderate Risk Maximum Cutoff: <span id="val-mod-risk" class="range-val-badge">68%</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-mod-risk" min="50" max="85" step="1" value="68" class="custom-range">
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">Samples with risk score between Safe and Moderate are marked WASH RECOMMENDED.</p>
+          </div>
+
+          <div class="form-group" style="margin-top: 1.25rem;">
+            <label class="form-label">Sensor Fusion Weight ($w_{sensor}$): <span id="val-sensor-weight" class="range-val-badge">65%</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-sensor-weight" min="0.2" max="0.8" step="0.05" value="0.65" class="custom-range">
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">Remaining weight is dynamically allocated to Computer Vision ($w_{image} = 1 - w_{sensor}$).</p>
+          </div>
+
+          <button id="btn-save-settings" class="btn-primary" style="margin-top: 1.5rem; width: 100%;">Save Configuration</button>
+        </div>
+
+        <!-- Sensor Calibration & Telegram -->
+        <div class="glass-panel settings-card">
+          <h3 class="card-title">Hardware Baseline Calibration</h3>
+          <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+            MQ sensors require baseline calibration in clean ambient air to compute $R_0$ resistance accurately. Ensure the probe is exposed to fresh air before initiating calibration.
+          </p>
+
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="v-metric-box" style="flex: 1;">
+              <div class="v-lbl">MQ-2 Clean Air R0</div>
+              <div id="mq2-r0-val" class="v-val">9.83 kΩ</div>
+            </div>
+            <div class="v-metric-box" style="flex: 1;">
+              <div class="v-lbl">MQ-135 Clean Air R0</div>
+              <div id="mq135-r0-val" class="v-val">3.60 kΩ</div>
+            </div>
+          </div>
+
+          <button id="btn-calibrate" class="btn-secondary" style="width: 100%; margin-bottom: 2rem;">
+            Start Clean-Air Calibration
+          </button>
+
+          <!-- Telegram Bot Alerts -->
+          <h3 class="card-title">Telegram Push Alerts</h3>
+          <div class="toggle-switch-wrap">
+            <span style="font-size: 0.88rem; font-weight: 500;">Enable Bot Notifications</span>
+            <label class="switch">
+              <input type="checkbox" id="tg-enabled">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="tg-token">Telegram Bot Token</label>
+            <input type="password" id="tg-token" class="custom-input" placeholder="e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="tg-chatid">Telegram Chat ID</label>
+            <input type="text" id="tg-chatid" class="custom-input" placeholder="e.g. -100123456789 or 987654321">
+          </div>
+
+          <button id="btn-test-telegram" class="btn-secondary" style="width: 100%;">
+            Send Test Alert to Telegram
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ===================================================================
+         VIEW 4: ABOUT & METHOD COMPARISON
+         =================================================================== -->
+    <section id="view-about" class="tab-view">
+      
+      <div class="glass-panel about-card">
+        <h3>System Architecture & Detection Principle</h3>
+        <p>
+          Commercial agricultural pesticides frequently formulate active molecules (such as organophosphates, pyrethroids, and carbamates) in hydrocarbon solvents, emulsifiers, wetting agents, and amine-stabilized carriers. When applied to produce peels, residues produce two distinct physical manifestations:
+        </p>
+        <p>
+          <strong>1. Volatile Headspace Degassing:</strong> Volatilization of organic solvents, aliphatic hydrocarbons, and organonitrogen decomposition compounds detected by the <strong>MQ-2</strong> (hydrocarbon/alcohol sensitive) and <strong>MQ-135</strong> (air quality, VOC, and amine sensitive) semiconductor gas sensor array through an ADS1115 16-bit ADC.<br>
+          <strong>2. Optical Surface Morphology:</strong> Dried droplet rings, chalky pesticide powder coatings (mancozeb, kaolin), copper fungicide stains (Bordeaux mixture), and sulfur dust detected via the <strong>ESP32-CAM</strong> high-resolution optical inspection and computer vision feature extraction pipeline.
+        </p>
+      </div>
+
+      <!-- Comparative Table -->
+      <div class="glass-panel about-card">
+        <h3>Comparison: IoT Screening vs Traditional Analytical Lab Testing</h3>
+        <p>Comprehensive benchmarking of this portable IoT multimodal approach against gold-standard laboratory chromatography:</p>
+        
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Evaluation Parameter</th>
+                <th>This IoT Screening System</th>
+                <th>HPLC (High-Perf. Liquid Chromatography)</th>
+                <th>GC-MS (Gas Chromatography - Mass Spec)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Analysis Speed</strong></td>
+                <td class="col-iot">⚡ 3 - 5 Seconds (Real-Time)</td>
+                <td>2 to 4 Days (Lab turnaround)</td>
+                <td>3 to 7 Days (Lab turnaround)</td>
+              </tr>
+              <tr>
+                <td><strong>Hardware Cost</strong></td>
+                <td class="col-iot">💵 ~$25 - $35 USD</td>
+                <td>$30,000 - $80,000 USD</td>
+                <td>$70,000 - $200,000 USD</td>
+              </tr>
+              <tr>
+                <td><strong>Test Cost per Sample</strong></td>
+                <td class="col-iot">🌿 ~$0.00 (Zero Reagent Cost)</td>
+                <td>$80 - $250 USD per sample</td>
+                <td>$120 - $400 USD per sample</td>
+              </tr>
+              <tr>
+                <td><strong>Portability</strong></td>
+                <td class="col-iot">🎒 Handheld, Battery-Operated</td>
+                <td>Fixed benchtop lab equipment</td>
+                <td>Heavy stationary lab facility</td>
+              </tr>
+              <tr>
+                <td><strong>Skill Requirement</strong></td>
+                <td class="col-iot">📱 Consumer / Farmer friendly (PWA)</td>
+                <td>Trained Analytical Chemist</td>
+                <td>Specialized Mass Spectroscopist</td>
+              </tr>
+              <tr>
+                <td><strong>Detection Capability</strong></td>
+                <td class="col-iot">Indicative Residue Screening (VOC + Vision)</td>
+                <td>Specific Molecule Quantification</td>
+                <td>Exact Molecular Fingerprint & Isotope</td>
+              </tr>
+              <tr>
+                <td><strong>Regulatory Validity</strong></td>
+                <td class="col-iot">Point-of-Sale / Kitchen Pre-Screening</td>
+                <td>Legal / Regulatory Certification</td>
+                <td>International Export Certification</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Scientific Limitations & Disclaimer -->
+      <div class="glass-panel about-card" style="border-left: 4px solid var(--accent-mod);">
+        <h3 style="color: var(--accent-mod);">Scientific Limitations & Regulatory Notice</h3>
+        <p>
+          <strong>Indicative Screening Tool:</strong> Semiconductor gas sensors (MQ-2 and MQ-135) detect broad classes of volatile organic compounds, solvent carriers, and ammonia/amine derivatives rather than isolating individual pesticide molecules. High natural ripening emissions (such as excessive ethylene or terpene release from overripe fruit) may modulate headspace readings. This system is designed as an accessible, rapid point-of-sale and kitchen screening tool to empower consumers and organic farmers, and does not replace certified chromatographic laboratory verification for statutory regulatory compliance.
+        </p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Image Zoom Lightbox Modal -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content-wrap">
+      <button class="modal-close-btn">&times;</button>
+      <img id="modal-img" src="" alt="High Resolution Inspection" class="modal-img">
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main Application Script -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
